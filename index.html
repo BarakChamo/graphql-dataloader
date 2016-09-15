@@ -1,0 +1,1711 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>High-Performance GraphQL</title>
+
+		<style>
+			@import 'https://fonts.googleapis.com/css?family=Source+Code+Pro:200,300,400,500,600,700,900&subset=latin-ext';
+			@import 'https://fonts.googleapis.com/css?family=Oswald:300,400,700';
+		</style>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/talk.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/github.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement('link')
+			link.rel = 'stylesheet'
+			link.type = 'text/css'
+			link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css'
+			document.getElementsByTagName('head')[0].appendChild(link)
+		</script>
+
+		<style>
+			.reveal pre {
+				box-shadow: none;
+				border: 1px solid rgba(0, 0, 0, 0.2);
+			}
+
+			.muted {
+				color: lightgray;
+			}
+
+			.blue {
+		    color: #1b91ff;
+			}
+
+			.bucket-group-container {
+				display: flex;
+				flex:1;
+				flex-direction: column;
+			}
+
+			.bucket-group {
+				/*display: flex;*/
+				flex:1;
+		    margin-bottom: 1em !important;
+				/*flex-direction: row;*/
+			}
+
+			.bucket-items {
+				padding: 0.25em !important;
+				text-align: left;
+				border: 2px solid lightgray !important;
+		    min-height: 1.3em;
+		    width: 100%;
+		    display: inline-block;
+			}
+
+			.buckets {
+				display: flex;
+				flex-direction: row;
+				justify-content: center;
+			}
+
+			.bucket {
+				flex:1;
+				padding: 1em !important;
+				border: 1px solid;
+			}
+
+			.left {
+				text-align: left;
+			}
+
+			.clear {
+				border: none !important;
+			}
+
+			body {
+				transition: all 0.45s;
+				background-size: 100% 100%;
+			}
+			.half body {
+				background: linear-gradient(to bottom, rgb(236,20,97) 50%, white 50%);
+			}
+
+			body .reveal {
+				margin-top:0.5em;
+			}
+
+			body .reveal .slides {
+				width: 100% !important;
+
+			}
+
+			.half-content {
+				text-align: center;
+			}
+
+			.dark body {
+				background: linear-gradient(to bottom, #999 50%, #999 50%);
+			}
+
+			.dark body section[data-state="dark"] {
+				padding-left: 2em;
+				text-align: left;
+			}
+
+			.strip body {
+				background: linear-gradient(to bottom, white 33%, rgb(236,20,97) 33%, rgb(236,20,97) 66%, white 66%);
+			}
+
+			.split body {
+				background: linear-gradient(to right, rgb(236,20,97) 50%, white 50%);
+			}
+
+			[data-state="split"] {
+				width:100%;
+				position: relative;
+				display: flex !important;
+				justify-content: center;
+				align-content: center;
+				align-items: center;
+			}
+
+			.split-section {
+				flex:1;
+				text-align: center;
+				display: inline;
+			}
+
+			.split-section {
+				padding-right: 1em !important;
+			}
+
+			.white {
+				color: white;
+			}
+
+			ul.tree {
+				font-size: 24px;
+				position: relative;
+			}
+
+			ul.tree ul.tree {
+				margin-left: 4em !important;
+			}
+
+			ul.tree li {
+				list-style: none;
+				padding: 0.5em;
+				margin-left: 0.5em;
+				margin-top: 0.75em;
+				position: relative;
+			}
+
+			ul.tree .tree-label {
+				position: relative;
+			}
+
+			.query {
+				color: #e91d63;
+			}
+
+			.node {
+				color: #673ab7;
+			}
+
+			ul.tree .query {
+				font-size: 0.75em;
+				top: -1em;
+				position:absolute;
+				left:0;
+			}
+
+			ul.tree .node {
+				font-size: 0.75em;
+				top: -1em;
+				position:absolute;
+				right:0;
+			}
+
+			ul.tree ul.tree li:after {
+			    content: '';
+			    position: absolute;
+			    width: 1px;
+			    height: 1em;
+			    background: #999;
+			    left: -1.5em;
+			    top: .2em;
+			}
+
+			ul.tree ul.tree li:before {
+			    content: '';
+			    position: absolute;
+			    width: 1em;
+			    height: 1px;
+			    background: #999;
+			    left: -1.5em;
+			    top: 1.2em;
+			}
+
+			ul.tree.grouped {
+				border: 1px solid #999;
+			}
+
+			.sub-query {
+				position: absolute;
+				border: 1px solid #999 !important;
+				padding-left: 0.5em !important;
+				padding-right: 0.5em !important;
+				right:-6em;
+			}
+
+			.sub-query:after {
+				content: '';
+				position: absolute;
+				width:0.85em;
+				height:1px;
+				background: #999;
+				left:-0.85em;
+				top:50%;
+			}
+
+			.query-stages {
+				position: absolute;
+				display: flex;
+				flex-direction: row;
+				left:.5em;
+				width: 92%;
+				height: 100%;
+			}
+
+			.query-stage {
+				display: flex;
+				flex: 1;
+				text-align: center;
+				padding: 0.25em !important;
+			}
+
+			.query-stage-inner {
+				font-size: 0.85em !important;
+				color: #999;
+				border: 2px dashed #999 !important;
+				flex:1;
+			}
+
+			.stack {
+
+				width:100%;
+				height:100%;
+				top:0;
+				display: flex;
+				flex-direction: row;
+				margin-left:0.5em !important;
+				align-items: center;
+				justify-content: center;
+			}
+
+			.stack .pane {
+				position: relative;
+				flex:1;
+				height: 30vh;
+				max-width: 50%;
+				margin:0 0.5em;
+				border: 2px solid #999;
+				padding: 0.5em;
+				padding-top:1em;
+
+				display: flex;
+				vertical-align: bottom;
+
+				/*flex-direction: column;*/
+				/*justify-content: flex-end;*/
+			}
+
+			.pane-inner {
+				width:100%;
+				display: flex;
+				vertical-align: bottom;
+				justify-content: flex-start;
+		    flex-direction: column-reverse;
+			}
+
+			.stack.h .pane {
+				margin-top: 1em;
+				padding-top:1em;
+				max-width: 100%;
+				height: 8vh;
+				flex-direction: row;
+				justify-content: flex-start;
+			}
+
+			.stack.h .pane-inner {
+				flex-direction: row;
+				justify-content: flex-start;
+			}
+
+			.stack .call {
+				display: flex !important;
+				align-items: center;
+				text-align: left;
+				margin: 0.25em;
+				font-size: 0.75em;
+				padding:0.25em;
+				background-color: #f8e71c;
+			}
+
+			.stack .pane .label {
+				font-size: 0.5em;
+				font-weight: 400;
+				color:#999;
+				position: absolute;
+				top:0.5em;
+				left:0.5em;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-state="half">
+					<span class="half-content"><h2>High-Performance GraphQL</h2></span>
+					<br><br><br><br><br><br>
+					<span class="half-content">
+						<span>Barak Chamo</span>
+						<br>
+						<span>@GoFoolhardy</span>
+					</span>
+				</section>
+
+				<section data-state="dark">
+					<h2>React</h2>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Render a list</h2>
+						<span class="white">Of users, their friends and events</span>
+					</div>
+					<div class="split-section">
+<pre class="fragment"><code>// fetchUsersWithEvents()
+
+let users = [{
+  name: 'Barak Chamo',
+  friends: [{
+    name: 'John Doe'
+  }],
+  events:[{
+    title: 'Partay!'
+  }]
+}]</code></pre>
+
+<pre class="fragment"><code class="javascript">users.map(user => (
+  <User user={user}></User>
+))</code></pre>
+
+<pre class="fragment"><code class="javascript"><div>
+  <span>{user.name}</span>
+
+  {user.friends.map(
+    friend => <friend user={friend}></friend>
+  )}
+  {user.events.map(
+    event => <event event={event}></event>
+  )}
+</div></code></pre>
+
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>RESTful API</h2>
+
+						<span class="white">Get User, User's Friends and User's Events</span>
+					</div>
+					<div class="split-section left">
+<pre><code>GET /users/1</code></pre>
+<pre><code>GET /users/1/friends</code></pre>
+<pre><code>GET /users/1/events</code></pre>
+<pre class="left clear">or</pre>
+<pre><code>GET /users/1?include=friends,events</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>RESTful API</h2>
+
+						<span class="white">Get User, User's Friends and User's Events</span>
+					</div>
+					<div class="split-section left">
+<pre><code>GET api/v1/users</code></pre>
+<pre><code>GET api/v2/users</code></pre>
+<pre><code>GET api/v3/users</code></pre>
+<pre><code>GET api/v4/users</code></pre>
+<pre><code>GET api/v5/users</code></pre>
+					</div>
+				</section>
+
+				<section data-state="dark">
+					<h2>GraphQL</h2>
+				</section>
+
+				<section data-state="strip">
+					<h3>GraphQL is a Query Language</h3>
+				</section>
+
+				<section data-state="strip">
+					<h3>Common data interface for client and server</h3>
+				</section>
+
+				<section data-state="strip">
+					<h3>Client-specified queries</h3>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>RESTful API</h2>
+
+						<span class="white">Get User, User's Friends and User's Events</span>
+					</div>
+					<div class="split-section left">
+<pre><code>GET /User/1</code></pre>
+<pre><code>GET /User/1/friends</code></pre>
+<pre><code>GET /User/1/events</code></pre>
+<pre class="left clear">or</pre>
+<pre><code>GET /User/1?include=friends,events</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>GraphQL</h2>
+
+						<span class="white">Get User, User's Friends and User's Events</span>
+					</div>
+					<div class="split-section left">
+<pre><code>GET /graph</code></pre>
+<pre><code>{
+  user(id: 1) {
+    name
+    friends {
+      name
+    }
+    events {
+      title
+      time
+    }
+  }
+}</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>GraphQL</h2>
+
+						<span class="white">Get User, User's Friends and User's Events</span>
+					</div>
+					<div class="split-section left">
+<pre><code>{
+  "user" : {
+    "id": 1,
+    "name": "Barak",
+    "friends": [{
+      "name": "Joe"
+    }],
+    "events": [{
+      "title": "CampJS",
+      "time": 1464614788674
+    }]
+  }
+}</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>GraphQL Types</h2>
+
+						<span class="white">User and Event node types</span>
+					</div>
+					<div class="split-section left">
+<pre class="inline"><code>type Query {
+  user: User
+  event: Event
+}
+</code></pre>
+<pre class="inline"><code>type Event {
+  id: !String
+  title: String
+  time: Float
+  creator: User
+}
+</code></pre>
+<pre class="inline"><code>type User {
+  id: !String
+  name: String
+  friends: [User]
+  events: [Event]
+}
+</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Relay</h2>
+
+						<span class="white">Connecting React and GraphQL</span>
+					</div>
+					<div class="split-section left">
+<pre class="inline"><code>User = Relay.createContainer(User, {
+  fragments: {
+    user: () => Relay.QL`
+      fragment on User {
+        id
+        name
+
+        friends {
+          ${ Friend.getFragment('friend') }
+        }
+      }
+    `,
+  },
+});</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>GraphQL</h2>
+
+						<span class="white">Get User, User's Friends and User's Events</span>
+					</div>
+					<div class="split-section left">
+<pre><code>{
+  user(id: 1) {
+    name
+    friends {
+      name
+    }
+    events {
+      title
+      time
+    }
+  }
+}</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>GraphQL in Node.js</h2>
+
+						<span class="white">Node Graph Implementation</span>
+					</div>
+					<div class="split-section left">
+<pre class="inline"><code>var userType = new GraphQLObjectType({
+  name: 'User',
+
+  fields: () => ({
+    id: { type: GraphQLString },
+    name: { type: GraphQLString },
+    friends: {
+      type: GraphQLList(userType),
+      resolve: user => fetchUsers(user.friends)
+    },
+
+    events: {
+      type: GraphQLList(eventType),
+      resolve: user => fetchEvents(user.events)
+    }
+  })
+})
+</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>GraphQL in Node.js</h2>
+
+						<span class="white">Node Graph Implementation</span>
+					</div>
+					<div class="split-section left">
+<pre class="inline"><code>var eventType = new GraphQLObjectType({
+  name: 'Event',
+
+  fields: () => ({
+    id: { type: GraphQLString },
+    title: { type: GraphQLString },
+    time: { type: GraphQLFloat },
+
+    creator: {
+      type: userType,
+      resolve: event => fetchUser(event.creator)
+    }
+  })
+})
+</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>GraphQL in Node.js</h2>
+
+						<span class="white">Node Graph Implementation</span>
+					</div>
+					<div class="split-section left">
+<pre><code>.use('/graphql', graphqlHTTP({ schema:schema }))</code></pre>
+<pre class="inline"><code>new GraphQLSchema({
+  query: new GraphQLObjectType({
+    name: 'Query',
+
+    fields: {
+      user: {
+        type: userType,
+        resolve: args => fetchUser(args.id)
+      },
+
+      event: {
+        type: eventType,
+        resolve: args => fetchEvent(args.id)
+      }
+    }
+  })
+})
+</code></pre>
+					</div>
+				</section>
+
+				<section data-state="strip">
+					<h3>1 declarative query instead of 3, or more!</h3>
+				</section>
+
+				<section data-state="strip">
+					<h3>But, what's happening on the database?</h3>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>DB Calls</h2>
+
+						<span class="white">Query for user, friends, events and event creators</span>
+					</div>
+					<div class="split-section left">
+<pre><code>{
+  user(id: 1) {
+    name
+    friends {
+      name
+    }
+    events {
+      title
+      time
+      creator
+    }
+  }
+}</code></pre>
+					</div>
+				</section>
+
+				<section data-state="strip">
+					<h3>One query...</h3>
+				</section>
+
+				<section data-state="strip">
+					<h3>How many database calls?</h3>
+				</section>
+
+				<section data-state="strip">
+					<h3>{{ example of DB call disaster }}</h3>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Query Chain</h2>
+
+						<span class="white">For the Full GraphQL Query</span>
+					</div>
+					<div class="split-section left">
+						<div class="tree-legend" style="text-align:left; margin-left: 1em; font-size: 0.85em;">
+							<small><p class="query">Queries</p>
+							<p class="node">Nodes</p></small>
+						</div>
+						<ul class='tree fragment'>
+							<li>
+								<span class="tree-label">
+									<div class="query">1</div><div class="node">1</div>
+									<span class="type">User</span>
+								</span>
+								<ul class="tree fragment">
+									<li>
+										<span class="tree-label">
+											<div class="query">1</div><div class="node">e</div>
+											<span class="type">Events</span>
+										</span>
+										<ul class="tree fragment">
+											<li>
+												<span class="tree-label">
+													<div class="query">e</div><div class="node"></div>
+													<span class="type">Creator</span>
+												</span>
+											</li>
+										</ul>
+									</li>
+									<li>
+										<span class="tree-label">
+											<div class="query">1</div><div class="node">f</div>
+											<span class="type">Friends</span>
+										</span>
+										<ul class="tree fragment">
+											<li>
+												<span class="tree-label">
+													<div class="query">f</div><div class="node">f * fe</div>
+													<span class="type">Events</span>
+												</span>
+												<ul class="tree fragment">
+													<li>
+														<span class="tree-label">
+															<div class="query">f * fe</div><div class="node"></div>
+															<span class="type">Creator</span>
+														</span>
+													</li>
+												</ul>
+											</li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Query Chain</h2>
+
+						<span class="white">The subquery nesting peroblem</span>
+					</div>
+					<div class="split-section left" style="text-align:left;">
+
+						<ul class="tree">
+							<span class="tree-label">
+								<span class="type">User</span>
+							</span>
+							<ul class="tree grouped">
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+							</ul>
+						</ul>
+					</div>
+				</section>
+
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Promise Sequence</h2>
+
+						<span class="white">Query for user, friends, events and event creators</span>
+					</div>
+					<div class="split-section left">
+<pre><code>var userType = new graphql.GraphQLObjectType({
+  fields: () => ({
+    friends: {
+      type: new graphql.GraphQLList(userType),
+      resolve: user => fetchUsers(user.friends)
+    },
+    events: {
+      type: new graphql.GraphQLList(eventType),
+      resolve: user => fetchEvents(user.events)
+    }
+  })
+})</code></pre>
+<pre><code>var eventType = new graphql.GraphQLObjectType({
+  fields: () => ({
+    creator: {
+      type: userType,
+      resolve: event => fetchUser(event.creator)
+    }
+  })
+})</code></pre>
+					</div>
+				</section>
+
+				<section data-state="dark">
+					<h2>DataLoader</h2>
+				</section>
+
+				<section data-state="strip">
+					<h3>Coalescing and Caching Requests</h3>
+				</section>
+
+				<section data-state="dark">
+					<h2>Asynchronicity</h2>
+				</section>
+
+				<section data-state="strip">
+					<h3>The Call Stack</h3>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return (x % 2) ? x : double(x)
+}
+
+console.log(doubleIfEven(4))</code></pre>
+					</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call fragment">console.log()</div>
+									<div class="call fragment">doubleIfEven()</div>
+									<div class="call fragment">double()</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return (x % 2) ? x : double(x)
+}
+
+console.log(doubleIfEven(4))</code></pre>
+					</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+							</div>
+
+						</div>
+					</div>
+				</section>
+
+				<section data-state="strip">
+					<h3>The Task Queue</h3>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return x % 2 ? x : double(x)
+}
+
+function doubleLaters() {
+  setTimeout(function(){
+    console.log(doubleIfEven(4))
+  })
+}
+
+doubleLaters()
+</code></pre>
+</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call fragment">doLaters()</div>
+									<div class="call fragment">setTimeout()</div>
+								</div>
+							</div>
+							<div class="pane">
+								<div class="label">Task Queue</div>
+								<div class="pane-inner">
+									<div class="call fragment">callback</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return x % 2 ? x : double(x)
+}
+
+function doubleLaters() {
+  setTimeout(function(){
+    console.log(doubleIfEven(4))
+  })
+}
+
+doubleLaters()
+</code></pre>
+</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+								</div>
+							</div>
+							<div class="pane">
+								<div class="label">Task Queue</div>
+								<div class="pane-inner">
+									<div class="call">callback</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return x % 2 ? x : double(x)
+}
+
+function doubleLaters() {
+  setTimeout(function(){
+    console.log(doubleIfEven(4))
+  })
+}
+
+doubleLaters()
+</code></pre>
+</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call">callback()</div>
+									<div class="call fragment">console.log()</div>
+									<div class="call fragment">doubleIfEven()</div>
+									<div class="call fragment">double()</div>
+								</div>
+							</div>
+							<div class="pane">
+								<div class="label">Task Queue</div>
+								<div class="pane-inner">
+									<!-- <div class="call">function</div> -->
+								</div>
+							</div>
+
+						</div>
+					</div>
+				</section>
+
+				<section data-state="strip">
+					<h3>The Job (microtask) Queue</h3>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return x % 2 ? x : double(x)
+}
+
+function doThing(x) {
+  setTimeout(() => alert(x))
+
+  Promise.resolve(x)
+    .then(doubleIfEven)
+    .then(console.log)
+}
+
+doThing(2)
+</code></pre>
+					</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call fragment">doThing()</div>
+									<div class="call fragment">setTimeout()</div>
+									<div class="call fragment">Promise.resolve()</div>
+								</div>
+							</div>
+							<div class="pane">
+								<div class="label">Task Queue</div>
+								<div class="pane-inner">
+									<div class="call fragment">callback</div>
+								</div>
+							</div>
+						</div>
+						<div class="stack h">
+							<div class="pane">
+								<div class="label">Job Queue</div>
+								<div class="pane-inner">
+									<div class="call fragment">then</div>
+									<div class="call fragment">then</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return x % 2 ? x : double(x)
+}
+
+function doThing(x) {
+  setTimeout(() => alert(x))
+
+  Promise.resolve(x)
+    .then(doubleIfEven)
+    .then(console.log)
+}
+
+doThing(2)
+</code></pre>
+					</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call fragment">doubleIfEven()</div>
+									<div class="call fragment">double()</div>
+								</div>
+							</div>
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call">callback</div>
+								</div>
+							</div>
+						</div>
+						<div class="stack h">
+							<div class="pane">
+								<div class="label">Job Queue</div>
+								<div class="pane-inner">
+									<div class="call">then</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return x % 2 ? x : double(x)
+}
+
+function doThing(x) {
+  setTimeout(() => alert(x))
+
+  Promise.resolve(x)
+    .then(doubleIfEven)
+    .then(console.log)
+}
+
+doThing(2)
+</code></pre>
+					</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call fragment">console.log()</div>
+								</div>
+							</div>
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call">callback</div>
+								</div>
+							</div>
+						</div>
+						<div class="stack h">
+							<div class="pane">
+								<div class="label">Job Queue</div>
+								<div class="pane-inner">
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<pre><code>function double(x) {
+  return x * 2
+}
+
+function doubleIfEven(x) {
+  return x % 2 ? x : double(x)
+}
+
+function doThing(x) {
+  setTimeout(() => alert(x))
+
+  Promise.resolve(x)
+    .then(doubleIfEven)
+    .then(console.log)
+}
+
+doThing(2)
+</code></pre>
+					</div>
+					<div class="split-section left">
+						<div class="stack">
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+									<div class="call">alert()</div>
+								</div>
+							</div>
+							<div class="pane">
+								<div class="label">Call Stack</div>
+								<div class="pane-inner">
+								</div>
+							</div>
+						</div>
+						<div class="stack h">
+							<div class="pane">
+								<div class="label">Job Queue</div>
+								<div class="pane-inner">
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section data-state="strip">
+					<h3>Jobs are processed at the end of a task</h3>
+				</section>
+
+				<section data-state="strip">
+					<h3>In the current frame of execution</h3>
+				</section>
+
+				<section data-state="strip">
+					<h3>Promise resolutions chain in execution</h3>
+				</section>
+
+				<section data-state="dark">
+					<h2>Back to DataLoader</h2>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Promise Sequence</h2>
+
+						<span class="white">Query for user, friends, events and event creators</span>
+					</div>
+					<div class="split-section left">
+<pre><code>var userType = new graphql.GraphQLObjectType({
+  fields: () => ({
+    friends: {
+      type: new graphql.GraphQLList(userType),
+      resolve: user => fetchUsers(user.friends)
+    },
+    events: {
+      type: new graphql.GraphQLList(eventType),
+      resolve: user => fetchEvents(user.events)
+    }
+  })
+})</code></pre>
+<pre><code>var eventType = new graphql.GraphQLObjectType({
+  fields: () => ({
+    creator: {
+      type: userType,
+      resolve: event => fetchUser(event.creator)
+    }
+  })
+})</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Promise Chain</h2>
+
+						<span class="white">For the Full Query</span>
+					</div>
+					<div class="split-section left">
+						<ul class='tree'>
+							<div class="query-stages">
+								<div class="query-stage fragment"><div class="query-stage-inner">Task 1</div></div>
+								<div class="query-stage fragment"><div class="query-stage-inner">Task 2</div></div>
+								<div class="query-stage fragment"><div class="query-stage-inner">Task 3</div></div>
+								<div class="query-stage fragment"><div class="query-stage-inner">Task 4</div></div>
+							</div>
+							<li>
+								<span class="tree-label">
+									<span class="type">User</span>
+								</span>
+								<ul class="tree">
+									<li>
+										<span class="tree-label">
+											<span class="type">Events</span>
+										</span>
+										<ul class="tree">
+											<li>
+												<span class="tree-label">
+													<span class="type">Creator</span>
+												</span>
+											</li>
+										</ul>
+									</li>
+									<li>
+										<span class="tree-label">
+											<span class="type">Friends</span>
+										</span>
+										<ul class="tree">
+											<li>
+												<span class="tree-label">
+													<span class="type">Events</span>
+												</span>
+												<ul class="tree">
+													<li>
+														<span class="tree-label">
+															<span class="type">Creator</span>
+														</span>
+													</li>
+												</ul>
+											</li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Loaders</h2>
+
+						<span class="white">A wrapper around async data fetching</span>
+					</div>
+					<div class="split-section left">
+<pre><code>var batchGetUsers = userIds  => new Promise(
+  (resolve, reject) => resolve(
+    userIds.map(
+      id => users[id]
+    )
+  )
+)
+
+let userLoader = new DataLoader(keys => {
+  return Promise.all(batchGetUsers(keys))
+})</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Promise Sequence</h2>
+
+						<span class="white">Query for user, friends, events and event creators</span>
+					</div>
+					<div class="split-section left">
+<pre><code>var userType = new graphql.GraphQLObjectType({
+  fields: () => ({
+    friends: {
+      type: new graphql.GraphQLList(userType),
+      resolve: u => userLoader.load(u.friends)
+    },
+    events: {
+      type: new graphql.GraphQLList(eventType),
+      resolve: e => eventLoader.load(e.events)
+    }
+  })
+})</code></pre>
+<pre><code>var eventType = new graphql.GraphQLObjectType({
+  fields: () => ({
+    creator: {
+      type: userType,
+      resolve: e => userLoader.load(e.creator)
+    }
+  })
+})</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>DataLoader</h2>
+
+						<span class="white">Coalescing Mechanism</span>
+					</div>
+					<div class="split-section left">
+<pre><code>let resolvedPromise
+
+function enqueuePostPromiseJob(fn) {
+
+  if (!resolvedPromise) {
+    resolvedPromise = Promise.resolve()
+  }
+
+  resolvedPromise.then(function () {
+    return process.nextTick(fn)
+  })
+}</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>Query Chain</h2>
+
+						<span class="white">The subquery nesting peroblem</span>
+					</div>
+					<div class="split-section left" style="text-align:left;">
+
+						<ul class="tree">
+							<span class="tree-label">
+								<span class="type">User</span>
+							</span>
+							<ul class="tree grouped">
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+								<li>
+									<span class="tree-label">
+										<span class="type">Friend</span><span class="sub-query">Events</span>
+									</span>
+								</li>
+							</ul>
+						</ul>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+						<h2>DataLoader</h2>
+
+						<span class="white">Loading example</span>
+					</div>
+					<div class="split-section left">
+<pre><code>// Define loader
+var loader = new DataLoader(keys => {
+  // batch fatch all async. coalesced keys
+  return Promise.all(batchGetUsers(keys))
+})
+
+function getUser(user){
+  console.log(user)
+}
+
+// Load items syncronously
+loader.load(1).then(getUser)
+loader.load(2).then(getUser)
+loader.load(1).then(getUser)
+loader.load(3).then(getUser)</code></pre>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<small style="color:white;">
+	<div style="text-align:left;"><span style="text-align:left;">
+	{<br/>
+	&nbsp;<span class="fragment highlight-blue">user(id: `1`)</span> { <span class="muted fragment">=> UL.load(1)</span> <br/>
+	&nbsp;&nbsp;name<br/>
+	<br/>
+	&nbsp;&nbsp;events {<br/>
+	&nbsp;&nbsp;&nbsp;title<br/>
+	&nbsp;&nbsp;}<br/>
+	<br/>
+	&nbsp;&nbsp;friends {<br/>
+	&nbsp;&nbsp;&nbsp;id<br/>
+	&nbsp;&nbsp;&nbsp;name<br/>
+	<br/>
+	&nbsp;&nbsp;&nbsp;<span class="">events</span> {<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;title<br/>
+	<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;<span class="">creator</span> {<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+	&nbsp;&nbsp;&nbsp;}<br/>
+	&nbsp;&nbsp;}<br/>
+	&nbsp;}<br/>
+	}</span>
+	</div>
+</small>
+					</div>
+					<div class="split-section left">
+						<div class="bucket-group-container">
+							<div class="bucket-group">
+								<div class=""><span>Coalescing</span></div>
+								<div class="buckets">
+									<div class="bucket">
+										<div><span class="bucket-label"><small>User Loader</small></span></div>
+										<div class="bucket-items"><span class="fragment current-visible">1</span></div>
+									</div>
+									<div class="bucket">
+										<div><span class="bucket-label"><small>Event Loader</small></span></div>
+										<div class="bucket-items"></div>
+									</div>
+								</div>
+							</div>
+							<div class="bucket-group">
+								<div class=""><span>Caching</span></div>
+								<div class="buckets">
+									<div class="bucket">
+										<div><span class="bucket-label"><small>User Loader</small></span></div>
+										<div class="bucket-items"><span class="fragment">1</span></div>
+									</div>
+									<div class="bucket">
+										<div><span class="bucket-label"><small>Event Loader</small></span></div>
+										<div class="bucket-items"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<small style="color:white;">
+	<div style="text-align:left;"><span style="text-align:left;">
+	{<br/>
+	&nbsp;<span class="blue">user(id: `1`)</span> { <span class="muted">=> UL.load(1)</span> <br/>
+	&nbsp;&nbsp;name<br/>
+	<br/>
+	&nbsp;&nbsp;<span class="fragment highlight-blue">events</span> {  <span class="muted fragment">=> EL.loadMany(1,2,3)</span> <br/>
+	&nbsp;&nbsp;&nbsp;title<br/>
+	&nbsp;&nbsp;}<br/>
+	<br/>
+	&nbsp;&nbsp;<span class="fragment highlight-blue">friends</span> {  <span class="muted fragment">=> UL.loadMany(2,3,4,5)</span> <br/>
+	&nbsp;&nbsp;&nbsp;id<br/>
+	&nbsp;&nbsp;&nbsp;name<br/>
+	<br/>
+	&nbsp;&nbsp;&nbsp;<span class="">events</span> {<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;title<br/>
+	<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;<span class="">creator</span> {<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+	&nbsp;&nbsp;&nbsp;}<br/>
+	&nbsp;&nbsp;}<br/>
+	&nbsp;}<br/>
+	}</span>
+	</div>
+</small>
+					</div>
+					<div class="split-section left">
+						<div class="bucket-group-container">
+							<div class="bucket-group">
+								<div class=""><span>Coalescing</span></div>
+								<div class="buckets">
+									<div class="bucket">
+										<div><span class="bucket-label"><small>User Loader</small></span></div>
+										<div class="bucket-items"><span class=""></span><span class="fragment current-visible">2,3,4,5</span></div>
+									</div>
+									<div class="bucket">
+										<div><span class="bucket-label"><small>Event Loader</small></span></div>
+										<div class="bucket-items"><span class=""></span><span class="fragment current-visible">1,2,3</span></div>
+									</div>
+								</div>
+							</div>
+							<div class="bucket-group">
+								<div class=""><span>Caching</span></div>
+								<div class="buckets">
+									<div class="bucket">
+										<div><span class="bucket-label"><small>User Loader</small></span></div>
+										<div class="bucket-items"><span class="">1</span><span class="fragment">,2,3,4,5</span></div>
+									</div>
+									<div class="bucket">
+										<div><span class="bucket-label"><small>Event Loader</small></span></div>
+										<div class="bucket-items"><span class=""></span><span class="fragment">1,2,3</span></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<small style="color:white;">
+	<div style="text-align:left;"><span style="text-align:left;">
+	{<br/>
+	&nbsp;<span class=" blue">user(id: `1`)</span> { <span class="muted ">=> UL.load(1)</span> <br/>
+	&nbsp;&nbsp;name<br/>
+	<br/>
+	&nbsp;&nbsp;<span class=" blue">events</span> {  <span class="muted ">=> EL.loadMany(1,2,3)</span> <br/>
+	&nbsp;&nbsp;&nbsp;title<br/>
+	&nbsp;&nbsp;}<br/>
+	<br/>
+	&nbsp;&nbsp;<span class=" blue">friends</span> {  <span class="muted ">=> UL.loadMany(2,3,4,5)</span> <br/>
+	&nbsp;&nbsp;&nbsp;id<br/>
+	&nbsp;&nbsp;&nbsp;name<br/>
+	<br/>
+	&nbsp;&nbsp;&nbsp;<span class="fragment highlight-blue">events</span> { <span class="muted fragment">=> EL.loadMany(1),2),3),4),5)</span> <br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;title<br/>
+	<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;<span class="">creator</span> {<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+	&nbsp;&nbsp;&nbsp;}<br/>
+	&nbsp;&nbsp;}<br/>
+	&nbsp;}<br/>
+	}</span>
+	</div>
+</small>
+					</div>
+					<div class="split-section left">
+						<div class="bucket-group-container">
+							<div class="bucket-group">
+								<div class=""><span>Coalescing</span></div>
+								<div class="buckets">
+									<div class="bucket">
+										<div><span class="bucket-label"><small>User Loader</small></span></div>
+										<div class="bucket-items"></div>
+									</div>
+									<div class="bucket">
+										<div><span class="bucket-label"><small>Event Loader</small></span></div>
+										<div class="bucket-items"><span class="fragment current-visible">4,5</span></div>
+									</div>
+								</div>
+							</div>
+							<div class="bucket-group">
+								<div class=""><span>Caching</span></div>
+								<div class="buckets">
+									<div class="bucket">
+										<div><span class="bucket-label"><small>User Loader</small></span></div>
+										<div class="bucket-items">1,2,3,4,5</div>
+									</div>
+									<div class="bucket">
+										<div><span class="bucket-label"><small>Event Loader</small></span></div>
+										<div class="bucket-items">1,2,3<span class="fragment">,4,5</span></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section data-state="split">
+					<div class="split-section">
+<small style="color:white;">
+	<div style="text-align:left;"><span style="text-align:left;">
+	{<br/>
+	&nbsp;<span class=" blue">user(id: `1`)</span> { <span class="muted ">=> UL.load(1)</span> <br/>
+	&nbsp;&nbsp;name<br/>
+	<br/>
+	&nbsp;&nbsp;<span class=" blue">events</span> {  <span class="muted ">=> EL.loadMany(1,2,3)</span> <br/>
+	&nbsp;&nbsp;&nbsp;title<br/>
+	&nbsp;&nbsp;}<br/>
+	<br/>
+	&nbsp;&nbsp;<span class=" blue">friends</span> {  <span class="muted ">=> UL.loadMany(2,3,4,5)</span> <br/>
+	&nbsp;&nbsp;&nbsp;id<br/>
+	&nbsp;&nbsp;&nbsp;name<br/>
+	<br/>
+	&nbsp;&nbsp;&nbsp;<span class=" blue">events</span> { <span class="muted ">=> EL.loadMany(1),2),3),4),5)</span> <br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;title<br/>
+	<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;<span class="fragment highlight-blue">creator</span> { <span class="muted fragment">=> UL.loadMany(1),2),3),4),5)</span> <br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name<br/>
+	&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+	&nbsp;&nbsp;&nbsp;}<br/>
+	&nbsp;&nbsp;}<br/>
+	&nbsp;}<br/>
+	}</span>
+	</div>
+</small>
+					</div>
+					<div class="split-section left">
+						<div class="bucket-group-container">
+							<div class="bucket-group">
+								<div class=""><span>Coalescing</span></div>
+								<div class="buckets">
+									<div class="bucket">
+										<div><span class="bucket-label"><small>User Loader</small></span></div>
+										<div class="bucket-items"><span class="fragment current-visible">--</span></div>
+									</div>
+									<div class="bucket">
+										<div><span class="bucket-label"><small>Event Loader</small></span></div>
+										<div class="bucket-items"></div>
+									</div>
+								</div>
+							</div>
+							<div class="bucket-group">
+								<div class=""><span>Caching</span></div>
+								<div class="buckets">
+									<div class="bucket">
+										<div><span class="bucket-label"><small>User Loader</small></span></div>
+										<div class="bucket-items">1,2,3,4,5</div>
+									</div>
+									<div class="bucket">
+										<div><span class="bucket-label"><small>Event Loader</small></span></div>
+										<div class="bucket-items">1,2,3<span>,4,5</span></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+				<section data-state="strip">
+					<h3>Thanks!</h3>
+					<h4>@GoFoolhardy</h4>
+				</section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+				transition: 'none',
+				slideNumber: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
